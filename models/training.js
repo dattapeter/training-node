@@ -10,10 +10,6 @@ const Training = mongoose.model('Training', {
     duration: {
         type: Number,
         required: true
-    },
-    status: {
-        type: String,
-        default: 'Not Started'
     }
 });
 
