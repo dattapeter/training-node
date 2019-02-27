@@ -4,6 +4,8 @@ const {ObjectID} = require('mongodb');
 const _ = require('lodash');
 
 const {Template} = require('./models/template');
+const {User} = require('./models/user');
+const {authenticate} = require('./middlewares/authenticate');
 
 const app = express();
 
@@ -25,7 +27,7 @@ app.use((req, res, next) => {
     next();
 });
 
-app.post('/add-template', (req, res) => {
+app.post('/template', (req, res) => {
     template = new Template({
         title: req.body.title,
         description: req.body.description
@@ -54,8 +56,6 @@ app.patch('/template/:id', (req, res) => {
 
     const modifiedTemplate = _.pick(req.body, ['title', 'description' ,'trainings']) 
 
-    console.log(modifiedTemplate);
-
     Template.findByIdAndUpdate(id, modifiedTemplate, {new: true}).then(
         template => {
             if(!template){
@@ -66,9 +66,9 @@ app.patch('/template/:id', (req, res) => {
         err => res.status(404).send(err)
     );
  
-})
+});
 
-app.delete('/delete-template/:id', (req, res)=> {
+app.delete('/template/:id', (req, res)=> {
     id = req.params.id;
 
     if(!ObjectID.isValid(id)){
@@ -84,8 +84,27 @@ app.delete('/delete-template/:id', (req, res)=> {
     }).catch(
         err => res.status(400).send(err)
     )
-})
+});
 
+app.post('/user/signup', (req, res) => {
+    const body = _.pick(req.body, ['uid', 'password']);
+    const user = new User(body);
+
+    user.save().then(
+        user => user.generateAuthToken()
+        
+    ).then(
+        token => res.header('x-auth', token).send(user)
+    )
+    .catch(
+        e => res.status(401).send(e)
+    )
+});
+
+
+app.get('/user', authenticate, (req, res) => {
+    res.status(200).send(user);
+});
 
 app.listen(3000, () => {
     console.log('Server started on port 3000');

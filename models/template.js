@@ -1,12 +1,5 @@
 const {mongoose} = require('../db/mongoose');
 
-class Training {
-    constructor(topic, duration) {
-        this.topic = topic,
-        this.duration = duration
-    }
-}
-
 const Template = mongoose.model('Template', {
     title: {
         type: String,
