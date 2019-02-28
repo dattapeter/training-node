@@ -1,5 +1,8 @@
-const {mongoose} = require('../db/mongoose');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+
+const {mongoose} = require('../db/mongoose');
+const _ = require('lodash');
 
 var UserSchema = new mongoose.Schema({
     uid: {
@@ -54,6 +57,59 @@ UserSchema.statics.findByToken = function(token) {
         'tokens.access': 'auth'
     })
 };
+
+
+UserSchema.statics.findByCredentials = function(uid, password) {
+    let User = this;
+
+    return User.findOne({uid}).then(user => {
+        if(!user) {
+            return Promise.reject();
+        }
+
+        return new Promise((resolve, reject) => {
+            bcrypt.compare(password, user.password, (err, res) => {
+                if(res) {
+                    resolve(user)
+                } else {
+                    reject();
+                }
+            })
+        });
+    })
+};
+
+
+UserSchema.methods.toJSON = function() {
+    var user = this.toObject();
+    return _.pick(user, ['_id', 'uid'])
+};
+
+
+UserSchema.methods.removeToken = function(token) {
+    var user = this;
+
+    return user.updateOne({
+        $pull: {
+            tokens: {token}
+        }
+    })
+}
+
+UserSchema.pre('save', function(next){
+    var user = this;
+
+    if(user.isModified('password')){
+        bcrypt.genSalt(10, (err, salt) => {
+            bcrypt.hash(user.password, salt, (err, hash) => {
+                user.password = hash
+                next();
+            })
+        })        
+    }else {
+        next();
+    }
+});
 
 const User = mongoose.model('User', UserSchema);
 

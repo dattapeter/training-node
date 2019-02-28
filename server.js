@@ -15,7 +15,7 @@ app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header(
         "Access-Control-Allow-Headers",
-        "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+        "Origin, X-Requested-With, Content-Type, Accept, Authorization, x-auth"
     );
 
     if(req.method === 'OPTIONS'){
@@ -92,19 +92,42 @@ app.post('/user/signup', (req, res) => {
 
     user.save().then(
         user => user.generateAuthToken()
-        
-    ).then(
-        token => res.header('x-auth', token).send(user)
-    )
-    .catch(
-        e => res.status(401).send(e)
+        ).then(
+             token => res.header('x-auth', token).send(user)
+        ).catch(e => 
+            res.status(401).send(e)
     )
 });
 
+app.post('/user/login', (req, res)=> {
+    const body = _.pick(req.body, ['uid', 'password']);
+    const user = new User(body);
+
+    User.findByCredentials(body.uid, body.password).then(
+        user => {
+            user.generateAuthToken().then( token => {
+                res.header('x-auth', token);
+                res.status(200).send(user);
+            })
+        }
+    ).catch(e => {
+        res.status(401).send(e);
+    })
+
+});
 
 app.get('/user', authenticate, (req, res) => {
-    res.status(200).send(user);
+    res.status(200).send(req.user);
 });
+
+app.delete('/user/logout', authenticate, (req, res) => {
+    req.user.removeToken(req.token).then(() => {
+        res.status(200).send();
+    }).catch(e => {
+        res.status(401).send(e);
+    })
+})
+
 
 app.listen(3000, () => {
     console.log('Server started on port 3000');
