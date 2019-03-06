@@ -36,7 +36,12 @@ UserSchema.methods.generateAuthToken = function() {
     const access = 'auth';
     const token =  jwt.sign({_id: user._id.toHexString(), access}, 'TrainingApp12$').toString();
 
-    user.tokens.push({access, token});
+    let index = user.tokens.findIndex(token => token.access = access)
+    if(index >= 0) {
+       user.tokens[index] = {access, token}  
+    } else {
+        user.tokens.push({access, token});
+    }
 
     return user.save().then(() => token);
 };
@@ -82,7 +87,8 @@ UserSchema.statics.findByCredentials = function(uid, password) {
 
 UserSchema.methods.toJSON = function() {
     var user = this.toObject();
-    return _.pick(user, ['_id', 'uid'])
+    user.token = user.tokens[user.tokens.findIndex(token => token.access == 'auth')].token
+    return _.pick(user, ['_id', 'uid', 'token'])
 };
 
 

@@ -19,7 +19,11 @@ const Template = mongoose.model('Template', {
         duration: {
             type: Number
         }
-    }]
+    }],
+    userId: {
+        type: mongoose.Types.ObjectId,
+        required: true
+    }
 });
 
 
